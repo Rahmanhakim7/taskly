@@ -25,3 +25,11 @@ pnpm-debug.log*
 Thumbs.db
 .vscode/
 .idea/
+
+
+# Database migration files
+taskly-data.sql
+schema-local.sql
+
+# Environment and secrets
+*.env
