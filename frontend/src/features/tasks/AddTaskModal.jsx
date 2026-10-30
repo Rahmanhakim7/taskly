@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { apiFetch } from "../../lib/api";
 
 function AddTaskModal({ onClose, onCreated }) {
   const [title, setTitle] = useState("");
@@ -21,7 +22,7 @@ function AddTaskModal({ onClose, onCreated }) {
     };
     try {
       setLoading(true);
-      const response = await fetch("/api/tasks", {
+      const response = await apiFetch("/tasks", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

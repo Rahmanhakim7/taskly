@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import AddTaskModal from "./AddTaskModal";
 import EditTaskModal from "./EditTaskModal";
+import { apiFetch } from "../../lib/api";
 
 const statusConfig = {
   todo: {
@@ -28,36 +29,61 @@ function TaskList() {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const tasksPerPage = 6;
 
-  const fetchTasks = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError("");
-      const response = await fetch("/api/tasks");
-      if (!response.ok) {
-        throw new Error("Gagal mengambil Data Task");
-      }
-      const result = await response.json();
-      setTasks(result.data || []);
-    } catch (error) {
-      console.error("Gagal Mengambil Task:", error);
-      setError("Data task gagal dimuat. Silakan coba lagi.");
-    } finally {
-      setLoading(false);
-    }
+  const filterKey = `${statusFilter}:${debouncedSearch}`;
+  const [pageState, setPageState] = useState({ filterKey, page: 1 });
+  const currentPage = pageState.filterKey === filterKey ? pageState.page : 1;
+
+  if (pageState.filterKey !== filterKey) {
+    setPageState({ filterKey, page: 1 });
+  }
+
+  function setCurrentPage(nextPage) {
+    setPageState((previous) => {
+      const previousPage =
+        previous.filterKey === filterKey ? previous.page : 1;
+      return {
+        filterKey,
+        page:
+          typeof nextPage === "function" ? nextPage(previousPage) : nextPage,
+      };
+    });
+  }
+
+  useEffect(() => {
+    let ignore = false;
+
+    apiFetch("/tasks")
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Gagal mengambil Data Task");
+        }
+        return response.json();
+      })
+      .then((result) => {
+        if (!ignore) {
+          setTasks(result.data || []);
+        }
+      })
+      .catch((error) => {
+        if (!ignore) {
+          console.error("Gagal Mengambil Task:", error);
+          setError("Data task gagal dimuat. Silakan coba lagi.");
+        }
+      })
+      .finally(() => {
+        if (!ignore) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      ignore = true;
+    };
   }, []);
-
-  useEffect(() => {
-    fetchTasks();
-  }, [fetchTasks]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [statusFilter, debouncedSearch]);
 
   const filteredTasks = tasks
     .filter((task) => {
@@ -69,14 +95,6 @@ function TaskList() {
     );
 
   const totalPages = Math.ceil(filteredTasks.length / tasksPerPage);
-
-  useEffect(() => {
-    if (totalPages > 0 && currentPage > totalPages) {
-      setCurrentPage(totalPages);
-    } else if (totalPages === 0 && currentPage !== 1) {
-      setCurrentPage(1);
-    }
-  }, [currentPage, totalPages]);
 
   const displayPage =
     totalPages === 0 ? 1 : currentPage > totalPages ? totalPages : currentPage;
@@ -92,7 +110,7 @@ function TaskList() {
       return;
     }
     try {
-      const response = await fetch(`/api/tasks/${id}`, {
+      const response = await apiFetch(`/tasks/${id}`, {
         method: "DELETE",
       });
       const result = await response.json();
@@ -276,7 +294,7 @@ function TaskList() {
               <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                  onClick={() => setCurrentPage(Math.max(1, displayPage - 1))}
                   disabled={displayPage === 1 || totalPages === 0}
                   className="rounded-lg border border-slate-200 px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-40"
                 >
@@ -286,8 +304,11 @@ function TaskList() {
                 <button
                   type="button"
                   onClick={() =>
-                    setCurrentPage((page) =>
-                      Math.min(totalPages === 0 ? 1 : totalPages, page + 1),
+                    setCurrentPage(
+                      Math.min(
+                        totalPages === 0 ? 1 : totalPages,
+                        displayPage + 1,
+                      ),
                     )
                   }
                   disabled={displayPage >= totalPages || totalPages === 0}

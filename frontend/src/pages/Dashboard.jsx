@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { apiFetch } from "../lib/api";
 
 function Dashboard() {
   const [tasks, setTasks] = useState([]);
@@ -8,7 +9,7 @@ function Dashboard() {
   useEffect(() => {
     async function fetchTasks() {
       try {
-        const response = await fetch("/api/tasks");
+        const response = await apiFetch("/tasks");
 
         if (!response.ok) {
           throw new Error("Gagal mengambil data task");

@@ -1,41 +1,48 @@
-﻿import { createContext, useContext, useEffect, useState } from "react";
-
-const AuthContext = createContext(null);
+﻿import { useEffect, useState } from "react";
+import { apiFetch } from "../lib/api";
+import { AuthContext } from "./auth-context";
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  async function fetchUser() {
-    try {
-      setLoading(true);
-      const response = await fetch("/api/auth/me", {
-        credentials: "include",
-      });
-      if (response.ok) {
-        const result = await response.json();
-        setUser(result.data || null);
-      } else {
-        setUser(null);
-      }
-    } catch (error) {
-      setUser(null);
-    } finally {
-      setLoading(false);
-    }
-  }
-
   useEffect(() => {
-    fetchUser();
+    let ignore = false;
+
+    apiFetch("/auth/me")
+      .then((response) => {
+        if (!response.ok) {
+          return null;
+        }
+        return response.json();
+      })
+      .then((result) => {
+        if (!ignore) {
+          setUser(result?.data || null);
+        }
+      })
+      .catch(() => {
+        if (!ignore) {
+          setUser(null);
+        }
+      })
+      .finally(() => {
+        if (!ignore) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      ignore = true;
+    };
   }, []);
 
   async function login(email, password) {
-    const response = await fetch("/api/auth/login", {
+    const response = await apiFetch("/auth/login", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      credentials: "include",
       body: JSON.stringify({ email, password }),
     });
     const result = await response.json();
@@ -47,12 +54,11 @@ export function AuthProvider({ children }) {
   }
 
   async function register(name, email, password, confirmPassword) {
-    const response = await fetch("/api/auth/register", {
+    const response = await apiFetch("/auth/register", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      credentials: "include",
       body: JSON.stringify({ name, email, password, confirmPassword }),
     });
     const result = await response.json();
@@ -65,11 +71,10 @@ export function AuthProvider({ children }) {
 
   async function logout() {
     try {
-      await fetch("/api/auth/logout", {
+      await apiFetch("/auth/logout", {
         method: "POST",
-        credentials: "include",
       });
-    } catch (error) {
+    } catch {
       // ignore
     } finally {
       setUser(null);
@@ -81,12 +86,4 @@ export function AuthProvider({ children }) {
       {children}
     </AuthContext.Provider>
   );
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within AuthProvider");
-  }
-  return context;
 }

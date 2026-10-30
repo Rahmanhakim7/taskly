@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
+import { apiFetch } from "../../lib/api";
 
 function Sidebar() {
   const [tasks, setTasks] = useState([]);
@@ -7,7 +8,7 @@ function Sidebar() {
   useEffect(() => {
     async function fetchTasks() {
       try {
-        const response = await fetch("/api/tasks");
+        const response = await apiFetch("/tasks");
         if (!response.ok) {
           return;
         }

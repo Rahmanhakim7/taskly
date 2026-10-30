@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { apiFetch } from "../../lib/api";
 
 function EditTaskModal({ task, onClose, onUpdated }) {
   const [title, setTitle] = useState(task.title);
@@ -16,7 +17,7 @@ function EditTaskModal({ task, onClose, onUpdated }) {
     try {
       setLoading(true);
 
-      const response = await fetch(`/api/tasks/${task.id}`, {
+      const response = await apiFetch(`/tasks/${task.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

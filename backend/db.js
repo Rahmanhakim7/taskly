@@ -10,6 +10,9 @@ if (!connectionString) {
 
 const poolConfig = {
   connectionString,
+  max: 5,
+  idleTimeoutMillis: 30_000,
+  connectionTimeoutMillis: 10_000,
 };
 
 if (process.env.DATABASE_SSL === "true") {
@@ -17,5 +20,9 @@ if (process.env.DATABASE_SSL === "true") {
 }
 
 const pool = new Pool(poolConfig);
+
+pool.on("error", (error) => {
+  console.error("PostgreSQL pool error:", error.message);
+});
 
 module.exports = pool;
