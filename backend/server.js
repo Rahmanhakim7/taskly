@@ -1,9 +1,10 @@
+require("dotenv").config();
+
 const express = require("express");
 const pool = require("./db");
 const session = require("express-session");
 const cookieParser = require("cookie-parser");
 const bcrypt = require("bcryptjs");
-require("dotenv").config();
 
 const app = express();
 app.use(express.json());

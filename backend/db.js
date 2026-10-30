@@ -1,11 +1,21 @@
 const { Pool } = require("pg");
 
-const pool = new Pool({
-  user: "postgres",
-  host: "localhost",
-  database: "taskly_db",
-  password: "Sekartejo123",
-  port: 5432,
-});
+const connectionString = process.env.DATABASE_URL;
+
+if (!connectionString) {
+  throw new Error(
+    "DATABASE_URL belum dikonfigurasi. Tambahkan connection string PostgreSQL pada environment variables.",
+  );
+}
+
+const poolConfig = {
+  connectionString,
+};
+
+if (process.env.DATABASE_SSL === "true") {
+  poolConfig.ssl = { rejectUnauthorized: false };
+}
+
+const pool = new Pool(poolConfig);
 
 module.exports = pool;
